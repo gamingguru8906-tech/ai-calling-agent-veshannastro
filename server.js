@@ -231,9 +231,11 @@ async function logToGoogleSheets(booking, paymentUrl) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        action: "new_booking",
         timestamp: new Date().toISOString(),
         ...booking,
         payment_link: paymentUrl || "",
+        payment_status: "pending",
       }),
     });
   } catch (e) {
@@ -325,7 +327,7 @@ app.post("/api/vapi-booking", async (req, res) => {
 
     // 3. WhatsApp + Sheets (fire-and-forget, don't block the voice agent)
     sendWhatsApp(booking, paymentLink?.short_url).catch(console.error);
-    logToGoogleSheets(booking, paymentLink?.short_url).catch(console.error);
+    logToGoogleSheets({ booking_id: insert.rows[0].id, ...booking }, paymentLink?.short_url).catch(console.error);
     if (booking.email) {
       const svcLabel = SERVICE_PRICING[booking.service].label;
       sendEmail(
@@ -370,6 +372,13 @@ app.post("/api/razorpay-webhook", express.raw({ type: "*/*" }), async (req, res)
       );
       console.log("💰 Payment received for link:", linkId);
       const b = r.rows[0];
+      if (b && process.env.GSHEET_WEBHOOK_URL) {
+        fetch(process.env.GSHEET_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "mark_paid", booking_id: b.id }),
+        }).catch(console.error);
+      }
       if (b && b.email) {
         const svcLabel = SERVICE_PRICING[b.service]?.label || b.service;
         sendEmail(b.email, `✅ Order Confirmed — ${svcLabel} | Veshannastro`, paidEmailHtml(b, svcLabel)).catch(console.error);
