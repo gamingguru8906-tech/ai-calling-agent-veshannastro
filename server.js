@@ -248,18 +248,32 @@ app.get("/", (_, res) => res.json({ status: "Maaya booking API live 🌟" }));
 
 app.post("/api/vapi-booking", async (req, res) => {
   try {
-    const {
-      client_name,
-      service,
-      dob,
-      birth_time,
-      birth_city,
-      whatsapp,
-      email,
-      preferred_date,
-      preferred_time,
-      source,
-    } = req.body || {};
+    // Accept both shapes: direct JSON (workflow/curl) OR VAPI assistant tool-call
+    let p = req.body || {};
+    let toolCallId = null;
+    if (p.message && Array.isArray(p.message.toolCalls) && p.message.toolCalls.length) {
+      const tc = p.message.toolCalls[0];
+      toolCallId = tc.id;
+      let args = tc.function && tc.function.arguments;
+      if (typeof args === "string") { try { args = JSON.parse(args); } catch (e) { args = {}; } }
+      p = args || {};
+    } else if (p.message && p.message.functionCall) {
+      // older function-call shape
+      let args = p.message.functionCall.parameters;
+      if (typeof args === "string") { try { args = JSON.parse(args); } catch (e) { args = {}; } }
+      p = args || {};
+    }
+
+    const client_name = p.client_name;
+    const service = p.service;
+    const dob = p.dob;
+    const birth_time = p.birth_time;
+    const birth_city = p.birth_city;
+    const whatsapp = p.whatsapp || p.whatsapp_number;
+    const email = p.email;
+    const preferred_date = p.preferred_date;
+    const preferred_time = p.preferred_time;
+    const source = p.source || "voice_assistant";
 
     // Validation
     if (!client_name || !service || !whatsapp) {
@@ -338,11 +352,16 @@ app.post("/api/vapi-booking", async (req, res) => {
     }
 
     // 4. Respond to VAPI quickly
+    const resultMsg = paymentLink?.short_url
+      ? `Booking saved successfully. A Razorpay payment link has been sent to the caller's WhatsApp and email.`
+      : `Booking saved successfully. The team will share a payment link shortly.`;
+    // VAPI assistant tool-calls expect results[].result; include flat fields too for the workflow/curl path
     return res.json({
+      results: toolCallId ? [{ toolCallId, result: resultMsg }] : undefined,
       success: true,
       booking_id: insert.rows[0].id,
       payment_link: paymentLink?.short_url || null,
-      message: `Booking confirmed for ${booking.client_name}`,
+      message: resultMsg,
     });
   } catch (err) {
     console.error("Booking error:", err);
