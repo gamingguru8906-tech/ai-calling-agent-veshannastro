@@ -91,11 +91,13 @@ function paidEmailHtml(b, svcLabel) {
 // Live pricing from veshannastro.co.in (25% OFF rates, in paise)
 const SERVICE_PRICING = {
   kundli: { label: "Vedic Kundli Consultation (40-min Zoom + PDF report)", amount: 224900 },
-  one_question: { label: "One Question Voice Consultation (WhatsApp)", amount: 22400 },
+  one_question: { label: "One Question Voice Reply (WhatsApp)", amount: 20200 },
   numerology: { label: "Numerology Session", amount: 82400 },
   name_numerology_report: { label: "Name Numerology Report", amount: 25000 },
   mobile_numerology_report: { label: "Mobile Number Analysis Report", amount: 25000 },
-  complete_numerology_report: { label: "Complete Numerology Report", amount: 25000 },
+  complete_numerology_report: { label: "Complete Numerology Report (Full Blueprint)", amount: 99900 },
+  business_name_report: { label: "Business Name Report", amount: 49900 },
+  baby_name_report: { label: "Baby Name Report", amount: 25000 },
   palm_reading: { label: "Palmistry Report", amount: 14900 },
   palm_voice: { label: "Palmistry Voice Consultation (report + 10-min voice)", amount: 37400 },
 };
